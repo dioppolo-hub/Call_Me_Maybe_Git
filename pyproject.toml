@@ -1,0 +1,29 @@
+[project]
+name = "call-me-maybe"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+	"pydantic>=2.0.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+	"mypy>=1.0.0",
+	"flake8>=6.0.0",
+]
+
+[tool.mypy]
+python_version = "3.10"
+disallow_untyped_defs = true
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.flake8]
+max-line-length = 80
+exclude = [
+	".venv",
+	"__pycache__",
+	"build",
+	"dist",
+]

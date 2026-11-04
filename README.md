@@ -1,3 +1,8 @@
+uv venv
+source .venv/bin/activate
+uv sync
+
+
 # Call Me Maybe
 
 Basandoci sul documento del progetto "Call Me Maybe" della scuola 42, ti trovi di fronte a un'esperienza stimolante: costruire un sistema di *function calling* per un Modello Linguistico di Grandi Dimensioni (LLM) di ridotte dimensioni (0.6 miliardi di parametri), sfruttando una tecnica avanzata chiamata *constrained decoding* (decodifica vincolata).
