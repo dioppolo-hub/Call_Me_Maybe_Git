@@ -1,13 +1,17 @@
 PYTHON := python3
+FUNC_DEF ?= data/input/functions_definition.json
+INPUT ?= data/input/function_calling_tests.json
+OUTPUT ?= data/output/function_calls.json
 
 install:
-	(PYTHON) -m pip install requirements.txt
+	uv sync --locked
 
 run:
-	(PYTHON) Main.py
+	uv run python src/Main.py \
+	--function_definition $(FUNC_DEF) --input $(INPUT) --output $(OUTPUT)
 
 debug:
-	(PYTHON) -m pdb Main.py
+	$(PYTHON) -m pdb src/Main.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -29,4 +33,4 @@ mypy:
 	--disallow-untyped-defs \
 	--check-untyped-defs
 
-.PHONY: lint mypy flake8 run clean
+.PHONY: lint mypy flake8 run clean install debug lint-strict

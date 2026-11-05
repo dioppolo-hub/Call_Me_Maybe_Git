@@ -1,6 +1,5 @@
-uv venv
-source .venv/bin/activate
-uv sync
+### uv venv
+### uv sync
 
 
 # Call Me Maybe
