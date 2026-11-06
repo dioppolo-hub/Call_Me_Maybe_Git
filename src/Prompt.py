@@ -1,9 +1,7 @@
 import sys
-from llm_sdk.llm_sdk import Small_LLM_Model
 
 def take_prompt():
 	prompt_list: list[str] = sys.argv
-	model = Small_LLM_Model()
 	if "--input" not in prompt_list:
 		input_path = "data/input/function_calling_tests.json"
 	i = 0
@@ -15,5 +13,3 @@ def take_prompt():
 		for line in f:
 			if line.lstrip().startswith('"prompt"'):
 				prompt = line.split(":")[1]
-				tensor = model.encode(prompt)
-				print(tensor)

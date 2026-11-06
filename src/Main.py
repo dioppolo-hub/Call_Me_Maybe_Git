@@ -1,10 +1,10 @@
 from Prompt import take_prompt
-from Parcer import Error
+from Parcer import Error, parce_prompt
 
 
 def main():
 	try:
-		take_prompt()
+		parce_prompt()
 	except Error as error:
 		print(error)
 
