@@ -18,39 +18,53 @@ def parce_prompt():
 		lines = f.readlines()
 	last_line = len(lines)
 	for j, line in enumerate(lines):
-		j += 1
-		print(j, line)
-		if j == 1 and line != "[":
-			raise Error(
-				f"[ERROR], line {j}, prompt "
-				"does not follow .json standard"
-				)
+		if j == 0:
+			if line.strip() != "[":
+				raise Error(
+					f"[ERROR], line {j}, prompt "
+					"does not follow .json standard"
+					)
+			else:
+				continue
 		if line.lstrip().startswith('"prompt"'):
-			if lines[j - 1] != "{":
+			if lines[j - 1].strip() != "{":
 				raise Error(
 					f"[ERROR], line {j - 1}, prompt "
 					"does not follow .json standard"
 				)
-			if lines[j + 1] != "},":
+			if lines[j + 1].strip() != "}," and lines[j + 1].strip() != "}":
 				raise Error(
 					f"[ERROR], line {j + 1}, prompt "
 					"does not follow .json standard"
 				)
-			prompt = line.split(":")[1]
+			prompt = line.strip(":")[1]
 			if not prompt or not isinstance(prompt, str):
 				raise Error(
 					f"[ERROR], line {j}, prompt "
 					"is not a valid string"
 				)
-		elif line.lstrip().startswith("{"):
+		elif line.strip().startswith("{"):
 			continue
-		elif line.lstrip().startswith("},"):
+		elif line.strip().startswith("},"):
 			continue
-		elif j == last_line and not line.lstrip().startswith("]"):
-			raise Error(
-				f"[ERROR], line {j}, prompt "
-				"does not follow .json standard"
-			)
+		elif line.strip().startswith("}"):
+			if (lines[j].strip() == "}" and
+			lines[j + 1].strip() != "]"):
+				raise Error(
+					f"[ERROR], line {j}, prompt "
+					"does not follow .json standard "
+					"'}' must be followed by ']'"
+				)
+			else:
+				continue
+		elif line.strip().startswith("]"):
+			if j != last_line - 1:
+				raise Error(
+					f"[ERROR], line {j}, prompt "
+					"does not follow .json standard"
+				)
+			else:
+				continue
 		else:
 			raise Error(
 				f"[ERROR], line {j}, input "
