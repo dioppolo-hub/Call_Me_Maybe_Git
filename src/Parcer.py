@@ -1,73 +1,72 @@
 import sys
+import json
+from typing import Any
+from pydantic import BaseModel, Field
 
 
 class Error(Exception):
 	pass
 
 
-def parce_prompt():
-	prompt_list: list[str] = sys.argv
-	if "--input" not in prompt_list:
-		input_path = "data/input/function_calling_tests.json"
-	i = 0
-	for _ in prompt_list:
-		if prompt_list[i].startswith("--input"):
-			input_path = prompt_list[i + 1]
-		i += 1
-	with open(input_path) as f:
-		lines = f.readlines()
-	last_line = len(lines)
-	for j, line in enumerate(lines):
-		if j == 0:
-			if line.strip() != "[":
-				raise Error(
-					f"[ERROR], line {j}, prompt "
-					"does not follow .json standard"
-					)
-			else:
-				continue
-		if line.lstrip().startswith('"prompt"'):
-			if lines[j - 1].strip() != "{":
-				raise Error(
-					f"[ERROR], line {j - 1}, prompt "
-					"does not follow .json standard"
-				)
-			if lines[j + 1].strip() != "}," and lines[j + 1].strip() != "}":
-				raise Error(
-					f"[ERROR], line {j + 1}, prompt "
-					"does not follow .json standard"
-				)
-			prompt = line.strip(":")[1]
-			if not prompt or not isinstance(prompt, str):
-				raise Error(
-					f"[ERROR], line {j}, prompt "
-					"is not a valid string"
-				)
-		elif line.strip().startswith("{"):
-			continue
-		elif line.strip().startswith("},"):
-			continue
-		elif line.strip().startswith("}"):
-			if (lines[j].strip() == "}" and
-			lines[j + 1].strip() != "]"):
-				raise Error(
-					f"[ERROR], line {j}, prompt "
-					"does not follow .json standard "
-					"'}' must be followed by ']'"
-				)
-			else:
-				continue
-		elif line.strip().startswith("]"):
-			if j != last_line - 1:
-				raise Error(
-					f"[ERROR], line {j}, prompt "
-					"does not follow .json standard"
-				)
-			else:
-				continue
-		else:
-			raise Error(
-				f"[ERROR], line {j}, input "
-				"value is not a prompt"
-			)
+class Parcer(BaseModel):
+	prompt_list_file: list[str] = sys.argv
+	prompt_list: list[str] = []
+	function_list: list[dict[Any, str]] = []
 
+	def parce_function(self):
+		if "--function_definition" not in self.prompt_list_file:
+			func_path = "data/input/functions_definition.json"
+		i = 0
+		for _ in self.prompt_list_file:
+			if self.prompt_list_file[i].startswith("--function_definition"):
+				func_path = self.prompt_list_file[i + 1]
+			i += 1
+		try:
+			with open(func_path) as f:
+				lines = json.load(f)
+		except FileNotFoundError:
+			raise Error(
+				"[ERROR], file function_def not found"
+			)
+		except json.JSONDecodeError:
+			raise Error(
+				"[ERROR], function definition file does not"
+				"follow JSON standard"
+			)
+		if not isinstance(lines, list) or not all(
+			isinstance(func, dict) for func in lines 
+		):
+			raise Error(
+				"[ERROR], function definition must follow"
+				" JSON standard"
+			)
+		self.function_list = lines			
+
+	def parce_prompt(self):
+		if "--input" not in self.prompt_list_file:
+			input_path = "data/input/function_calling_tests.json"
+		i = 0
+		for _ in self.prompt_list_file:
+			if self.prompt_list_file[i].startswith("--input"):
+				input_path = self.prompt_list_file[i + 1]
+			i += 1
+		try:
+			with open(input_path) as f:
+				lines = json.load(f)
+		except FileNotFoundError:
+			raise Error(
+				"[ERROR], file input not found"
+			)
+		except json.JSONDecodeError:
+			raise Error(
+				"[ERROR], function definition file does not"
+				"follow JSON standard"
+			)
+		if not isinstance(lines, list) or not all(
+			isinstance(func, dict) for func in lines
+		):
+			raise Error(
+				"[ERROR], prompt definition must follow"
+				" JSON standard"
+			)
+		self.prompt_list = lines
