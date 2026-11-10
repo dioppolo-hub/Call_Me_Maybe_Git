@@ -1,4 +1,3 @@
-from Prompt import take_prompt
 from Parcer import Error, Parcer
 import sys
 
@@ -6,7 +5,7 @@ import sys
 def main():
 	try:
 		parce = Parcer()
-		parce.parce_prompt()
+		prompt, function = parce.parce()
 	except Error as error:
 		print(error)
 

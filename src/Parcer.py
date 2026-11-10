@@ -13,7 +13,12 @@ class Parcer(BaseModel):
 	prompt_list: list[str] = []
 	function_list: list[dict[Any, str]] = []
 
-	def parce_function(self):
+	def parce(self) -> tuple[list[str], list[dict[Any, str]]]:
+		self.parce_prompt()
+		self.parce_function()
+		return (self.prompt_list, self.function_list)
+
+	def parce_function(self) -> None:
 		if "--function_definition" not in self.prompt_list_file:
 			func_path = "data/input/functions_definition.json"
 		i = 0
@@ -42,7 +47,7 @@ class Parcer(BaseModel):
 			)
 		self.function_list = lines			
 
-	def parce_prompt(self):
+	def parce_prompt(self) -> None:
 		if "--input" not in self.prompt_list_file:
 			input_path = "data/input/function_calling_tests.json"
 		i = 0
