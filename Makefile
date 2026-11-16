@@ -4,7 +4,7 @@ INPUT ?= data/input/function_calling_tests.json
 OUTPUT ?= data/output/function_calls.json
 
 install:
-	uv sync --locked
+	uv sync
 
 run:
 	uv run python src/Main.py \

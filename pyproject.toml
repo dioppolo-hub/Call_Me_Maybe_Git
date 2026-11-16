@@ -8,8 +8,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+	"torch>=2.0.0",
+	"transformers>=4.40.0",
+	"accelerate>=1.13.0",
+	"huggingface-hub>=0.20.0",
 	"mypy>=1.0.0",
 	"flake8>=6.0.0",
+	"numpy",
 ]
 
 [tool.mypy]
