@@ -46,12 +46,15 @@ def generate_args(
 	expected = set(parameters)
 	context = (
 		"Estrai dalla richiesta i valori dei parametri della funzione.\n"
-		"Rispondi solo con un oggetto JSON: nessun nome funzione, "
-		"descrizione o schema.\n"
-		"Parametri richiesti e tipi: "
+		"Lo schema indica i tipi attesi: non copiare lo schema nella risposta.\n"
+		"Rispondi con un solo oggetto JSON. Le chiavi devono essere "
+		"esattamente i nomi dei parametri; i valori devono essere "
+		"quelli estratti dalla richiesta.\n"
+		"Non aggiungere chiavi come 'type', 'description' o 'parameters'.\n"
+		f"Schema dei parametri: "
 		f"{json.dumps(parameters, ensure_ascii=False)}\n"
 		f"Richiesta: {request}\n"
-		"Argomenti:"
+		"Valori:"
 	)
 	token_ids = model.encode(context)[0].tolist()
 	generated_ids = []
@@ -71,11 +74,17 @@ def generate_args(
 		if not isinstance(arguments, dict):
 			raise ValueError("Gli argomenti generati non sono un oggetto JSON")
 		expected = set(func.get("parameters", {}))
-		if set(arguments) != expected:
+		missing = expected - set(arguments)
+		if missing:
 			raise ValueError(
-				f"Parametri non corretti, attesi: {expected}\n"
-				f"ricevuti: {set(arguments)}"
+				f"Parametri mancanti: {missing}\n"
+				f"Argomenti generati: {arguments}\n"
+				f"Testo prodotto: {text}"
 			)
+		arguments = {
+			key: arguments[key]
+			for key in expected
+		}
 		return arguments
 	raise RuntimeError(
 		"Il modello non ha identificato una funzione. Testo:"
@@ -87,28 +96,40 @@ def main():
 		parce = Parcer()
 		model = llm()
 		prompt, function = parce.parce()
-		updated_prompts = [dict(item) for item in prompt]
-		request = updated_prompts[0]["prompt"]
-		func_name = generate_func_name(model, request, function)
-		selected_func = next(
-			item for item in function
-			if item.get("name") == func_name
-		)
-		args = generate_args(model, request, selected_func)
-		updated_prompts[0].update({
-			"name": func_name,
-			"arguments": args,
-		})
-		script_dir = os.path.dirname(os.path.abspath(__file__))
-		project_dir = os.path.dirname(script_dir)
-		output_dir = os.path.join(project_dir, "data", "output")
-		os.makedirs(output_dir, exist_ok=True)
-		output_file = os.path.join(
-			output_dir, "function_calls.join"
-		)
-		with open(output_file, "w", encoding="utf-8") as f:
-			json.dump(updated_prompts, f, ensure_ascii=False, indent=2)
-			f.write("\n")
+		updated_prompts = []
+		for index, prompt_item in enumerate(prompt):
+			if not isinstance(prompt_item, dict):
+				raise ValueError(f"il prompt {index} non e' un oggetto JSON")
+			request = prompt_item.get("prompt")
+			if not isinstance(request, str):
+				raise ValueError(f"il prompt {index} non contiene testo valido")
+			func_name = generate_func_name(model, request, function)
+			selected_func = next(
+				(
+					item for item in function
+					if item.get("name") == func_name
+				),
+				None,
+			)
+			if selected_func is None:
+				raise ValueError(f"Funzione non trovata: {func_name}")
+			args = generate_args(model, request, selected_func)
+			updated_item = dict(prompt_item)
+			updated_item.update({
+				"name": func_name,
+				"arguments": args,
+			})
+			updated_prompts.append(updated_item)
+			script_dir = os.path.dirname(os.path.abspath(__file__))
+			project_dir = os.path.dirname(script_dir)
+			output_dir = os.path.join(project_dir, "data", "output")
+			os.makedirs(output_dir, exist_ok=True)
+			output_file = os.path.join(
+				output_dir, "function_calls.join"
+			)
+			with open(output_file, "w", encoding="utf-8") as f:
+				json.dump(updated_prompts, f, ensure_ascii=False, indent=2)
+				f.write("\n")
 	except Error as error:
 		print(error)
 

@@ -7,7 +7,7 @@ install:
 	uv sync
 
 run:
-	uv run python src/Main.py \
+	time uv run python src/Main.py \
 	--function_definition $(FUNC_DEF) --input $(INPUT) --output $(OUTPUT)
 
 debug:
