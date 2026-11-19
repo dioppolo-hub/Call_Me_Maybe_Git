@@ -3,16 +3,16 @@
     "prompt": "What is the sum of 2 and 3?",
     "name": "fn_add_numbers",
     "arguments": {
-      "b": 3,
-      "a": 2
+      "a": 2,
+      "b": 3
     }
   },
   {
     "prompt": "What is the sum of 265 and 345?",
     "name": "fn_add_numbers",
     "arguments": {
-      "b": 345,
-      "a": 265
+      "a": 265,
+      "b": 345
     }
   },
   {
@@ -62,8 +62,8 @@
     "name": "fn_substitute_string_with_regex",
     "arguments": {
       "regex": "34,233",
-      "replacement": "34,233",
-      "source_string": "Hello 34 I'm 233 years old"
+      "source_string": "Hello 34 I'm 233 years old",
+      "replacement": "34,233"
     }
   },
   {
@@ -71,8 +71,8 @@
     "name": "fn_substitute_string_with_regex",
     "arguments": {
       "regex": "a",
-      "replacement": "a",
-      "source_string": "Programming is fun"
+      "source_string": "Programming is fun",
+      "replacement": "a"
     }
   },
   {
@@ -80,8 +80,8 @@
     "name": "fn_substitute_string_with_regex",
     "arguments": {
       "regex": "cat",
-      "replacement": "dog",
-      "source_string": "The cat sat on the mat with another cat"
+      "source_string": "The cat sat on the mat with another cat",
+      "replacement": "dog"
     }
   }
 ]

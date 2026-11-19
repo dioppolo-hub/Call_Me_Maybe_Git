@@ -4,6 +4,7 @@ from typing import Any
 import os
 import json
 import re
+from Validate import review_and_repair_call, validate_call
 
 
 def generate_func_name(
@@ -103,7 +104,6 @@ def main():
 			request = prompt_item.get("prompt")
 			if not isinstance(request, str):
 				raise ValueError(f"il prompt {index} non contiene testo valido")
-			func_name = generate_func_name(model, request, function)
 			selected_func = next(
 				(
 					item for item in function
@@ -113,7 +113,7 @@ def main():
 			)
 			if selected_func is None:
 				raise ValueError(f"Funzione non trovata: {func_name}")
-			args = generate_args(model, request, selected_func)
+			func_name, args = review_and_repair_call(model, request, function)
 			updated_item = dict(prompt_item)
 			updated_item.update({
 				"name": func_name,
