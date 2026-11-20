@@ -3,23 +3,23 @@
     "prompt": "What is the sum of 2 and 3?",
     "name": "fn_add_numbers",
     "arguments": {
-      "a": 2,
-      "b": 3
+      "b": 3,
+      "a": 2
     }
   },
   {
     "prompt": "What is the sum of 265 and 345?",
     "name": "fn_add_numbers",
     "arguments": {
-      "a": 265,
-      "b": 345
+      "b": 345,
+      "a": 265
     }
   },
   {
     "prompt": "Greet shrek",
     "name": "fn_greet",
     "arguments": {
-      "name": "Greet"
+      "name": "Shrek"
     }
   },
   {
@@ -47,32 +47,32 @@
     "prompt": "What is the square root of 16?",
     "name": "fn_get_square_root",
     "arguments": {
-      "a": 4
+      "a": 16
     }
   },
   {
     "prompt": "Calculate the square root of 144",
     "name": "fn_get_square_root",
     "arguments": {
-      "a": 12
+      "a": 144
     }
   },
   {
     "prompt": "Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS",
     "name": "fn_substitute_string_with_regex",
     "arguments": {
-      "regex": "34,233",
-      "source_string": "Hello 34 I'm 233 years old",
-      "replacement": "34,233"
+      "regex": "\\d+",
+      "replacement": "NUMBERS",
+      "source_string": "Hello 34 I'm 233 years old"
     }
   },
   {
     "prompt": "Replace all vowels in 'Programming is fun' with asterisks",
     "name": "fn_substitute_string_with_regex",
     "arguments": {
-      "regex": "a",
-      "source_string": "Programming is fun",
-      "replacement": "a"
+      "regex": "a|e|i|o|u",
+      "replacement": "*",
+      "source_string": "Programming is fun"
     }
   },
   {
@@ -80,8 +80,8 @@
     "name": "fn_substitute_string_with_regex",
     "arguments": {
       "regex": "cat",
-      "source_string": "The cat sat on the mat with another cat",
-      "replacement": "dog"
+      "replacement": "dog",
+      "source_string": "The cat sat on the mat with another cat"
     }
   }
 ]

@@ -3,124 +3,68 @@ from llm_sdk import Small_LLM_Model as llm
 import json
 
 
-def validate_call(
-		name: str,
-		functions: list[dict[str, Any]],
-		arguments: dict[str, Any]
-) -> dict[str, Any]:
-	function = next(
-		(item for item in functions if item.get("name") == name), None,
-	)
-	if function is None:
-		raise ValueError(f"Funzione non disponibile: {name}")
-	parameters = function.get("parameters", {})
-	if not isinstance(parameters, dict):
-		raise ValueError(f"Schema parametri non valido per {name}")
-	expected_keys = set(parameters)
-	actual_keys = set(arguments)
-	if expected_keys != actual_keys:
-		raise ValueError(
-			f"Parametri non corretti per {name}"
-			f"attesi: {expected_keys}, ricevuti: {actual_keys}"
-		)
-	for key, schema in parameters.items():
-		value = arguments[key]
-		expected_type = schema.get("type")
-		valid = (
-			expected_type == "string"
-			and isinstance(value, str)
-			or expected_type == "number"
-			and isinstance(value, (int, float))
-			and not isinstance(value, bool)
-			or expected_type == "integer"
-			and isinstance(value, int)
-			and not isinstance(value, bool)
-			or expected_type == "boolean"
-			and isinstance(value, bool)
-			or expected_type == "array"
-			and isinstance(value, list)
-			or expected_type == "object"
-			and isinstance(value, dict)
-		)
-		if not valid:
-			raise ValueError(
-				f"Tipo non valido pr '{key}': atteso: "
-				f"{expected_type}, ricvuto: {type(value).__name__}"
-			)
+def matches_json_type(value: Any, expected_type: str | None) -> bool:
+	if expected_type == None:
+		return True
+	if expected_type == "string":
+		return isinstance(value, str)
+	if expected_type == "number":
+		return isinstance(value, (int, float)) and not isinstance(value, bool)
+	if expected_type == "integer":
+		return isinstance(value, int) and not isinstance(value, bool)
+	if expected_type == "boolean":
+		return isinstance(value, bool)
+	if expected_type == "array":
+		return isinstance(value, list)
+	if expected_type == "object":
+		return isinstance(value, dict)
+	return True
 
-def review_and_repair_call(
-		model: llm,
-		request: str,
-		functions: list[dict[str, Any]]
-) -> tuple[str, dict[str, Any]]:
-	decoder = json.JSONDecoder()
-	last_error = "Nessun tentativo effettuato"
-	for attempt in range(3):
-		context = (
-			"seleziona la funzione piu' adatta ed estrai i valori dei suoi "
-			"parametri dalla richiesta. Restituisci gli input della funzione, "
-			"non il risultato che la funzione calcolerebbe.\n"
-			'rispondi solo con JSON nel formato: '
-			'{"name": "nome_funzione",'
-			'"arguments": {"parametro": "valore"}}.\n'
-			"Definizioni disponibili: "
-			f"{json.dumps(functions, ensure_ascii=False)}\n"
-			f"Richiesta: {request}\n"
-		)
-		if attempt:
-			context += (
-				f"La risposta precedente non era valida: {last_error}\n"
-				"Rigenera da zero l'intero oggetto JSON rispettando "
-				"le definizioni.\n"
-			)
-		context += "Chiamata:"
-		token_ids = model.encode(context)[0].tolist()
-		result = None
-		generated_ids = []
-		for _ in range(128):
-			logits = model.get_logits_from_input_ids(
-				token_ids + generated_ids
-			)
-			next_id = max(range(len(logits)), key=logits.__getitem__)
-			generated_ids.append(next_id)
-			text = model.decode(generated_ids)
-			start = text.find("{")
-			if start == -1:
-				continue
-			try:
-				candidate, _ = decoder.raw_decode(text, start)
-			except json.JSONDecodeError:
-				continue
-			if (
-				isinstance(candidate, dict)
-				and isinstance(candidate.get("name"), str)
-				and isinstance(candidate.get("arguments"), dict)
-				):
-					result = candidate
-					break
-		if result is None:
-			last_error = (
-				"Risposta senza i campi richiesti. Testo generato:"
-				f"{model.decode(generated_ids)}"
-			)
+
+def get_param_schema(func_def: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+	params = func_def.get("parameters", {})
+	if not isinstance(params, dict):
+		return {}, []
+	if isinstance(params.get("properties"), dict):
+		properties = params["properties"]
+		required = params.get("required", [])
+		if not isinstance(required, list):
+			required = []
+		return properties, required
+	ignored_keys = {"type", "properties", "required", "description", "title"}
+	properties = {k: v for k, v in params.items() if k not in ignored_keys}
+	return properties, list(properties.keys())
+
+def validate_func_name(func_name: str, available_funcs: list[dict[str, Any]]) -> tuple[bool, str]:
+	if not isinstance(func_name, str) or not func_name.strip():
+		return False, "Il nome della funzione e' vuoto o non e' una stringa"
+	valid_names = {f.get("name") for f in available_funcs if isinstance(f.get("name"), str)}
+	if func_name not in valid_names:
+		return False, f"Funzione '{func_name}' non presente tra quelle disponibili: {sorted(valid_names)}"
+	return True, "OK"
+
+def validate_args(args: Any, func_def: dict[str, Any]) -> tuple[bool, list[str]]:
+	errors: list[str] = []
+	if not isinstance(args, dict):
+		return False, ["Gli argomenti devono essere un oggetto JSON (dict)"]
+	properties, required = get_param_schema(func_def)
+	for req_key in required:
+		if req_key not in args or args[req_key] is None:
+			errors.append(f"Parametro obbligatorio mancante o nullo: '{req_key}'")
+	if properties:
+		unexpected = set(args.keys()) - set(properties.keys())
+		if unexpected:
+			errors.append(f"Parametri non previsti dallo schema: {sorted(unexpected)}")
+	for key, val in args.items():
+		if key not in properties:
 			continue
-		name = result.get("name")
-		args = result.get("arguments")
-		if (
-			not isinstance(name, str)
-			or not isinstance(args, dict)
-		):
-			last_error = (
-				"La risposta deve avere 'name' testuale e "
-				"'arguments' come oggetto JSON"
+		prop_schema = properties[key]
+		if not isinstance(prop_schema, dict):
+			continue
+		expected_type = prop_schema.get("type")
+		if val is not None and not matches_json_type(val, expected_type):
+			errors.append(
+				f"Parametro '{key}': valore {val} non ammesso.\n"
+				f"Valori validi: {prop_schema['enum']}"
 			)
-			continue
-		try:
-			validate_call(name, functions, args)
-		except ValueError as error:
-			last_error = str(error)
-			continue
-		return (name, args)
-	raise ValueError(
-		f"Chiamata non valida dopo 3 tentativi: {last_error}"
-	)
+	return len(errors) == 0, errors
